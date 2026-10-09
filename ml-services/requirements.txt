@@ -1,0 +1,9 @@
+fastapi>=0.104.0
+uvicorn>=0.23.2
+ultralytics>=8.0.200
+torch>=2.0.0
+torchvision>=0.15.0
+pillow>=10.0.0
+python-multipart>=0.0.6
+pydantic>=2.0
+python-dotenv>=1.0.0

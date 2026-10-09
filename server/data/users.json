@@ -1,0 +1,58 @@
+[
+  {
+    "id": 101,
+    "name": "Demo Citizen",
+    "email": "demo@sudharak.com",
+    "password_hash": "$2a$10$elxpGY5pIMeAmeWK27/KoO5tJ.1MPBI.XVBqhpZSfzIJW0b60YaWe",
+    "google_id": null,
+    "profile_image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Demo%20Citizen",
+    "auth_provider": "LOCAL",
+    "role": "CITIZEN",
+    "location": "Pune, India",
+    "karma": 10,
+    "created_at": "2026-10-08T11:24:47.282Z",
+    "updated_at": "2026-10-08T11:24:47.283Z"
+  },
+  {
+    "id": 102,
+    "name": "Tester User",
+    "email": "tester@sudharak.com",
+    "password_hash": "$2a$10$Hqt79emCXF9xywkx8URzH.ln8nHAvsdha8dkfS/LHLuHbTDs0DcnC",
+    "google_id": null,
+    "profile_image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Tester%20User",
+    "auth_provider": "LOCAL",
+    "role": "CITIZEN",
+    "location": "Pune, India",
+    "karma": 10,
+    "created_at": "2026-10-08T11:42:15.906Z",
+    "updated_at": "2026-10-08T11:42:15.906Z"
+  },
+  {
+    "id": 103,
+    "name": "Local Government",
+    "email": "gov@sudharak.com",
+    "password_hash": "$2a$10$mOCyo32tGFiLa/Kfh69JyuQVnxjyypm1vZRlWnRP22GxQC5GJQgP6",
+    "google_id": null,
+    "profile_image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Government",
+    "auth_provider": "LOCAL",
+    "role": "GOVERNMENT",
+    "location": "Pune, India",
+    "karma": 100,
+    "created_at": "2026-10-08T12:00:00.000Z",
+    "updated_at": "2026-10-08T12:00:00.000Z"
+  },
+  {
+    "id": 104,
+    "name": "Tester Pothole",
+    "email": "tester_pothole_99@sudharak.com",
+    "password_hash": "$2a$10$ZNSBKG.wj47Bq2j0J9tn3OD.TlcONrgCpyFcV.zl9v78q6EB.X/TO",
+    "google_id": null,
+    "profile_image": "https://api.dicebear.com/7.x/avataaars/svg?seed=Tester%20Pothole",
+    "auth_provider": "LOCAL",
+    "role": "CITIZEN",
+    "location": "Pune, India",
+    "karma": 10,
+    "created_at": "2026-10-08T13:26:11.623Z",
+    "updated_at": "2026-10-08T13:26:11.623Z"
+  }
+]
