@@ -1,51 +1,36 @@
-import { db } from '../config/db.js';
+import { prisma } from '../config/prisma.js';
 
 export class DonationModel {
-  static findAll() {
-    return db.read('donations');
+  static async findAll() {
+    return prisma.donation.findMany();
   }
 
-  static findById(id) {
-    const donations = db.read('donations');
-    return donations.find(d => d.id === Number(id));
+  static async findByIssueId(issue_id) {
+    return prisma.donation.findMany({ where: { issue_id: Number(issue_id) } });
   }
 
-  static findByIssueId(issueId) {
-    const donations = db.read('donations');
-    return donations.filter(d => d.issue_id === Number(issueId));
+  static async create(data) {
+    return prisma.donation.create({
+      data: {
+        issue_id: Number(data.issue_id),
+        donor_id: Number(data.donor_id),
+        amount: parseFloat(data.amount),
+        paypal_order_id: data.paypal_order_id
+      }
+    });
   }
 
-  static findByDonorId(donorId) {
-    const donations = db.read('donations');
-    return donations.filter(d => d.donor_id === Number(donorId));
+  static async updateStatusByOrderId(order_id, status) {
+    return prisma.donation.update({
+      where: { paypal_order_id: order_id },
+      data: { status }
+    });
   }
 
-  static create(donationData) {
-    const donations = db.read('donations');
-    const newDonation = {
-      id: donations.length > 0 ? Math.max(...donations.map(d => d.id)) + 1 : 1,
-      issue_id: Number(donationData.issue_id),
-      donor_id: Number(donationData.donor_id),
-      amount: parseFloat(donationData.amount),
-      currency: donationData.currency || 'USD',
-      paypal_order_id: donationData.paypal_order_id || null,
-      paypal_capture_id: donationData.paypal_capture_id || null,
-      status: donationData.status || 'PENDING',
-      created_at: new Date().toISOString()
-    };
-    donations.push(newDonation);
-    db.write('donations', donations);
-    return newDonation;
-  }
-
-  static updateStatus(id, status, captureId = null) {
-    const donations = db.read('donations');
-    const index = donations.findIndex(d => d.id === Number(id));
-    if (index === -1) return null;
-
-    donations[index].status = status;
-    if (captureId) donations[index].paypal_capture_id = captureId;
-    db.write('donations', donations);
-    return donations[index];
+  static async updateStatus(id, status, capture_id = null) {
+    return prisma.donation.update({
+      where: { id: Number(id) },
+      data: { status }
+    });
   }
 }

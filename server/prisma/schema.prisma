@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            Int        @id @default(autoincrement())
+  email         String     @unique
+  password      String
+  name          String
+  role          String     @default("USER") // USER, GOVERNMENT, SECURE_ADMIN
+  karma_score   Int        @default(100)
+  point_balance Float      @default(0.0)
+  profile_pic   String?
+  issues        Issue[]
+  donations     Donation[]
+  upvotes       Upvote[]
+  comments      Comment[]
+  created_at    DateTime   @default(now())
+}
+
+model Issue {
+  id                 Int        @id @default(autoincrement())
+  user_id            Int
+  user               User       @relation(fields: [user_id], references: [id])
+  title              String
+  description        String     
+  ai_description     String     
+  category           String
+  severity           String
+  confidence         Float
+  location           String
+  lat                Float
+  lng                Float
+  status             String     @default("REPORTED") // REPORTED, IN_PROGRESS, RESOLVED, VERIFIED
+  verification_level String     @default("AI_VERIFIED") // AI_VERIFIED, COMMUNITY_VERIFIED, OFFICIALLY_VERIFIED
+  escrow_status      String     @default("HELD_IN_ESCROW") // HELD_IN_ESCROW, RELEASED_TO_CONTRACTOR, REFUNDED
+  escrow_beneficiary String     @default("PMC Infrastructure Ward #14 Dept / Verified NGO Partner")
+  escrow_disclaimer  String     @default("Indicative AI estimate. Funds locked safely in Municipal Escrow Vault.")
+  image_url          String
+  repair_proof_image String?
+  repair_proof_notes String?    
+  repaired_by        String?
+  resolved_at        DateTime?
+  funding_goal       Float
+  cost_min_inr       Float
+  cost_max_inr       Float
+  funding_raised     Float      @default(0.0)
+  upvotes            Int        @default(0)
+  priority_score     Float      @default(75)
+  escalated          Boolean    @default(false)
+  escalated_at       DateTime?
+  created_at         DateTime   @default(now())
+  updated_at         DateTime   @updatedAt
+
+  timeline_events    TimelineEvent[]
+  donations          Donation[]
+  issue_upvotes      Upvote[]
+  comments           Comment[]
+}
+
+model TimelineEvent {
+  id         Int      @id @default(autoincrement())
+  issue_id   Int
+  issue      Issue    @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  title      String
+  status     String   @default("pending") // pending, done
+  desc       String   
+  date       DateTime?
+}
+
+model Donation {
+  id              Int      @id @default(autoincrement())
+  issue_id        Int
+  issue           Issue    @relation(fields: [issue_id], references: [id])
+  donor_id        Int
+  donor           User     @relation(fields: [donor_id], references: [id])
+  amount          Float
+  paypal_order_id String   @unique
+  status          String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  created_at      DateTime @default(now())
+}
+
+model Upvote {
+  id         Int      @id @default(autoincrement())
+  issue_id   Int
+  issue      Issue    @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id])
+  created_at DateTime @default(now())
+
+  @@unique([issue_id, user_id])
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  issue_id   Int
+  issue      Issue    @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id])
+  content    String   
+  created_at DateTime @default(now())
+}

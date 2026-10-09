@@ -1,19 +1,27 @@
-import { db } from '../config/db.js';
+import { prisma } from '../config/prisma.js';
 
 export class IssueModel {
-  static findAll() {
-    return db.read('issues');
+  static async findAll() {
+    return prisma.issue.findMany({
+      include: { user: { select: { name: true, profile_pic: true } } },
+      orderBy: { created_at: 'desc' }
+    });
   }
 
-  static findById(id) {
-    const issues = db.read('issues');
-    return issues.find(i => i.id === Number(id));
+  static async findById(id) {
+    return prisma.issue.findUnique({
+      where: { id: Number(id) },
+      include: {
+        user: { select: { name: true, profile_pic: true, email: true } },
+        timeline_events: true,
+        donations: true,
+        comments: { include: { user: { select: { name: true, profile_pic: true } } }, orderBy: { created_at: 'asc' } },
+        issue_upvotes: true
+      }
+    });
   }
 
-  static create(data) {
-    const issues = db.read('issues');
-    
-    // Calculate verification level based on initial input
+  static async create(data) {
     let verificationLevel = 'AI_VERIFIED';
     if (data.upvotes >= 3) verificationLevel = 'COMMUNITY_VERIFIED';
 
@@ -22,121 +30,79 @@ export class IssueModel {
     const costMinInr = Math.round(costInr * 0.85);
     const costMaxInr = Math.round(costInr * 1.25);
 
-    const newIssue = {
-      id: issues.length > 0 ? Math.max(...issues.map(i => i.id)) + 1 : 101,
-      user_id: data.user_id,
-      title: data.title || 'Civic Infrastructure Defect',
-      description: data.description || '',
-      ai_description: data.ai_description || '',
-      category: data.category || 'POTHOLE',
-      severity: data.severity || 'HIGH',
-      confidence: parseFloat(data.confidence) || 0.91,
-      location: data.location || 'Pune, Maharashtra',
-      lat: data.lat || 18.5204,
-      lng: data.lng || 73.8567,
-      status: 'REPORTED', // REPORTED -> IN_PROGRESS -> RESOLVED -> VERIFIED
-      verification_level: verificationLevel, // AI_VERIFIED, COMMUNITY_VERIFIED, OFFICIALLY_VERIFIED
-      escrow_status: 'HELD_IN_ESCROW', // HELD_IN_ESCROW, RELEASED_TO_CONTRACTOR, REFUNDED
-      escrow_beneficiary: 'PMC Infrastructure Ward #14 Dept / Verified NGO Partner',
-      escrow_disclaimer: 'Indicative AI estimate. Funds locked safely in Municipal Escrow Vault until repair proof verification.',
-      image_url: data.image_url || '',
-      repair_proof_image: null,
-      repair_proof_notes: null,
-      repaired_by: null,
-      resolved_at: null,
-      funding_goal: costInr,
-      cost_min_inr: costMinInr,
-      cost_max_inr: costMaxInr,
-      funding_raised: 0.00,
-      upvotes: 0,
-      priority_score: data.priority_score || 75,
-      escalated: false,
-      escalated_at: null,
-      timeline: [
-        { title: 'Report Logged', date: new Date().toISOString(), status: 'done', desc: 'Geotagged citizen report submitted' },
-        { title: 'AI Diagnostics', date: new Date().toISOString(), status: 'done', desc: `Verified category ${data.category || 'POTHOLE'} with ${Math.round((data.confidence || 0.91) * 100)}% confidence` },
-        { title: 'Ward Officer Acceptance', date: null, status: 'pending', desc: 'Awaiting PMC Ward Engineer review' },
-        { title: 'Repair In Progress', date: null, status: 'pending', desc: 'Contractor assigned & escrow released' },
-        { title: 'Repair Verified & Resolved', date: null, status: 'pending', desc: 'Before/After proof inspection' },
-      ],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    issues.push(newIssue);
-    db.write('issues', issues);
-    return newIssue;
+    const issue = await prisma.issue.create({
+      data: {
+        user_id: data.user_id,
+        title: data.title || 'Civic Infrastructure Defect',
+        description: data.description || '',
+        ai_description: data.ai_description || '',
+        category: data.category || 'POTHOLE',
+        severity: data.severity || 'HIGH',
+        confidence: parseFloat(data.confidence) || 0.91,
+        location: data.location || 'Pune, Maharashtra',
+        lat: data.lat || 18.5204,
+        lng: data.lng || 73.8567,
+        verification_level: verificationLevel,
+        image_url: data.image_url || '',
+        funding_goal: costInr,
+        cost_min_inr: costMinInr,
+        cost_max_inr: costMaxInr,
+        priority_score: data.priority_score || 75,
+        timeline_events: {
+          create: [
+            { title: 'Report Logged', status: 'done', desc: 'Geotagged citizen report submitted' },
+            { title: 'AI Diagnostics', status: 'done', desc: `Verified category ${data.category || 'POTHOLE'} with ${Math.round((data.confidence || 0.91) * 100)}% confidence` },
+            { title: 'Ward Officer Acceptance', status: 'pending', desc: 'Awaiting PMC Ward Engineer review' },
+            { title: 'Repair In Progress', status: 'pending', desc: 'Contractor assigned & escrow released' },
+            { title: 'Repair Verified & Resolved', status: 'pending', desc: 'Before/After proof inspection' }
+          ]
+        }
+      }
+    });
+
+    return issue;
   }
 
-  static update(id, updateData) {
-    const issues = db.read('issues');
-    const index = issues.findIndex(i => i.id === Number(id));
-    if (index === -1) return null;
-
-    const current = issues[index];
-    const updatedUpvotes = (updateData.upvotes !== undefined) ? updateData.upvotes : current.upvotes;
-    
-    let verificationLevel = current.verification_level;
-    if (updatedUpvotes >= 3 && verificationLevel === 'AI_VERIFIED') {
-      verificationLevel = 'COMMUNITY_VERIFIED';
-    }
+  static async update(id, updateData) {
+    let verificationLevel = undefined;
     if (updateData.status === 'IN_PROGRESS' || updateData.status === 'RESOLVED') {
       verificationLevel = 'OFFICIALLY_VERIFIED';
     }
 
-    issues[index] = { 
-      ...current, 
-      ...updateData, 
-      verification_level: verificationLevel,
-      updated_at: new Date().toISOString() 
-    };
-
-    db.write('issues', issues);
-    return issues[index];
-  }
-
-  static resolveWithProof(id, proofData) {
-    const issues = db.read('issues');
-    const index = issues.findIndex(i => i.id === Number(id));
-    if (index === -1) return null;
-
-    const current = issues[index];
-    const now = new Date().toISOString();
-
-    const updatedTimeline = current.timeline.map(item => {
-      if (item.title.includes('Ward Officer') || item.title.includes('Repair In Progress')) {
-        return { ...item, status: 'done', date: item.date || now };
+    return prisma.issue.update({
+      where: { id: Number(id) },
+      data: {
+        ...updateData,
+        ...(verificationLevel ? { verification_level: verificationLevel } : {})
       }
-      if (item.title.includes('Resolved')) {
-        return { ...item, status: 'done', date: now, desc: `Verified with proof image by ${proofData.repaired_by || 'PMC Ward Team'}` };
-      }
-      return item;
     });
-
-    issues[index] = {
-      ...current,
-      status: 'RESOLVED',
-      verification_level: 'OFFICIALLY_VERIFIED',
-      escrow_status: 'RELEASED_TO_CONTRACTOR',
-      repair_proof_image: proofData.repair_proof_image,
-      repair_proof_notes: proofData.repair_proof_notes || 'Municipal repair completed & visually verified.',
-      repaired_by: proofData.repaired_by || 'PMC Municipal Contractor',
-      resolved_at: now,
-      timeline: updatedTimeline,
-      updated_at: now
-    };
-
-    db.write('issues', issues);
-    return issues[index];
   }
 
-  static addFunding(id, amount) {
-    const issues = db.read('issues');
-    const index = issues.findIndex(i => i.id === Number(id));
-    if (index === -1) return null;
-    issues[index].funding_raised = parseFloat((issues[index].funding_raised + parseFloat(amount)).toFixed(2));
-    issues[index].updated_at = new Date().toISOString();
-    db.write('issues', issues);
-    return issues[index];
+  static async addFunding(id, amount) {
+    return prisma.issue.update({
+      where: { id: Number(id) },
+      data: { funding_raised: { increment: parseFloat(amount) } }
+    });
+  }
+
+  static async resolveWithProof(id, proofData) {
+    return prisma.issue.update({
+      where: { id: Number(id) },
+      data: {
+        repair_proof_image: proofData.image_url,
+        repair_proof_notes: proofData.notes,
+        status: 'VERIFIED',
+        verification_level: 'OFFICIALLY_VERIFIED',
+        repaired_by: proofData.contractor_name || 'Verified Civic Contractor',
+        resolved_at: new Date(),
+        timeline_events: {
+          create: {
+            title: 'Repair Verified & Resolved',
+            desc: `Before/After proof inspection approved. Repair done by ${proofData.contractor_name || 'Verified Civic Contractor'}.`,
+            status: 'done'
+          }
+        }
+      }
+    });
   }
 }

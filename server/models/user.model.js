@@ -1,57 +1,33 @@
-import { db } from '../config/db.js';
+import { prisma } from '../config/prisma.js';
+import bcrypt from 'bcryptjs';
 
 export class UserModel {
-  static findAll() {
-    return db.read('users');
+  static async findByEmail(email) {
+    return prisma.user.findUnique({ where: { email } });
   }
 
-  static findById(id) {
-    const users = db.read('users');
-    return users.find(u => u.id === Number(id));
+  static async findById(id) {
+    return prisma.user.findUnique({ where: { id: Number(id) } });
   }
 
-  static findByEmail(email) {
-    const users = db.read('users');
-    return users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  static async create(data) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+
+    return prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+        role: data.role || 'USER'
+      }
+    });
   }
 
-  static findByGoogleId(googleId) {
-    const users = db.read('users');
-    return users.find(u => u.google_id === googleId);
-  }
-
-  static create(userData) {
-    const users = db.read('users');
-    const newUser = {
-      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 101,
-      name: userData.name,
-      email: userData.email,
-      password_hash: userData.password_hash || null,
-      google_id: userData.google_id || null,
-      profile_image: userData.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userData.name)}`,
-      auth_provider: userData.auth_provider || 'LOCAL',
-      role: userData.role || 'CITIZEN',
-      location: userData.location || 'Pune, India',
-      karma: userData.karma || 10,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    users.push(newUser);
-    db.write('users', users);
-    return newUser;
-  }
-
-  static update(id, updateData) {
-    const users = db.read('users');
-    const index = users.findIndex(u => u.id === Number(id));
-    if (index === -1) return null;
-    
-    users[index] = {
-      ...users[index],
-      ...updateData,
-      updated_at: new Date().toISOString()
-    };
-    db.write('users', users);
-    return users[index];
+  static async addKarma(userId, points) {
+    return prisma.user.update({
+      where: { id: Number(userId) },
+      data: { karma_score: { increment: points } }
+    });
   }
 }
