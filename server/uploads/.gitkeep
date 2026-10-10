@@ -1,0 +1,1 @@
+# This file keeps the uploads directory in git. Actual uploaded images go to S3 in production.
