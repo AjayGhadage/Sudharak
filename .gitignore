@@ -21,8 +21,9 @@ venv/
 .env.local
 .env.production
 .env.development
-# Allow templates (no real secrets)
-!.env.production.template
+*.env.template
+*.env.production.template
+.env.production.template
 
 # ── Database ──────────────────────────────────────────────────
 server/prisma/dev.db
