@@ -37,6 +37,10 @@ server/uploads/*
 # ── AWS key files ─────────────────────────────────────────────
 *.pem
 *.key
+prod.env
+remote-env.txt
+sudharak-aws-info.txt
+setup-https.sh
 
 # ── Editor ────────────────────────────────────────────────────
 .vscode/*
@@ -54,3 +58,4 @@ ml-services/venv/
 ml-services/__pycache__/
 ml-services/**/*.pyc
 
+.neon
